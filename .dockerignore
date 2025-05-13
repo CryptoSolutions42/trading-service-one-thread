@@ -1,0 +1,13 @@
+.env
+.eslintrc
+.gitignore
+.prettierrc
+.github
+.vscode
+Dockerfile
+nodemon.json
+README.md
+tsconfig.json
+tsconfig.build.json
+src
+tests
