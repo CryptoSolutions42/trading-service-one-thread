@@ -128,6 +128,17 @@ export abstract class AbstractTradingClass {
     return price;
   }
 
+  protected async _reloadConfig(): Promise<void> {
+    const config = await this._ConfigRepository.getConfig()[0];
+
+    if (!config) {
+      return;
+    }
+
+    this._config = config;
+    console.log(`=> Config reload!`);
+  }
+
   protected async _onPriceTracker({ side, settingOrder }: PriceTrackerParamType) {
     try {
       console.log('start _onPriceTracker => ');
@@ -163,21 +174,16 @@ export abstract class AbstractTradingClass {
           this._OrdersOperationService.orders[0].side,
         );
 
-        if (
-          (side === 'sell' &&
-            (lastPrice >= targetStopProfit || (lastPrice < targetTakeProfit && lastPrice < targetStopProfit))) ||
-          (side === 'buy' &&
-            (lastPrice <= targetStopProfit || (lastPrice < targetTakeProfit && lastPrice < targetStopProfit)))
-        ) {
+        if ((side === 'sell' && lastPrice <= targetStopProfit) || (side === 'buy' && lastPrice >= targetStopProfit)) {
           await this._openPositionForStrategy({
             side,
-            settingOrder,
+            settingOrder: { ...settingOrder, price: lastPrice },
           });
           console.log('Tracker done!');
           return true;
         }
 
-        if ((side === 'sell' && lastPrice <= targetTakeProfit) || (side === 'buy' && lastPrice >= targetTakeProfit)) {
+        if ((side === 'sell' && lastPrice >= targetTakeProfit) || (side === 'buy' && lastPrice <= targetTakeProfit)) {
           targetTakeProfit = calculateTarget('take', lastPrice);
           targetStopProfit = calculateTarget('stop', lastPrice);
           console.log('changes targetTakeProfit => ', { targetTakeProfit });
@@ -270,6 +276,7 @@ export abstract class AbstractTradingClass {
     };
 
     while (this._OrdersOperationService.orders.length !== 0) {
+      await this._reloadConfig();
       const balance: BalanceType = await this._ExchangeService.getBalance();
       const side = this._OrdersOperationService.orders[this._OrdersOperationService.orders.length - 1].side;
       const unrealizedPnl = await this._ExchangeService.getUnrealizedPnl(
@@ -277,15 +284,15 @@ export abstract class AbstractTradingClass {
         settingForFirstOrder ? settingForFirstOrder.price : this._OrdersOperationService.orders[0].price,
         firstOrder ? firstOrder.side : this._OrdersOperationService.orders[0].side,
       );
-      const profitPrice =
-        price +
-        (firstOrder.side === 'sell'
-          ? -(price * this._config.percentProfit + options.buyingBack * this._takerFee)
-          : price * this._config.percentProfit + options.buyingBack * this._takerFee);
       const buyBackPrice = price * (this._config.percentBuyBackStep * options.drawdownStep);
       const { firstCurrency, secondCurrency } = this._getCurrencyBreakdown(this._SYMBOL);
       const nativeCurrency = side === 'sell' ? firstCurrency : secondCurrency;
       const lastPrice = await this._ExchangeService.getPrice(this._SYMBOL);
+      const profitPrice =
+        price +
+        (firstOrder.side === 'sell'
+          ? -(price * this._config.percentProfit + options.buyingBack * this._takerFee)
+          : price * this._config.percentProfit + (lastPrice / options.buyingBack) * this._takerFee);
       const deltaForSale = this._getDeltaForSale({ side, buyingBack: options.buyingBack, price, lastPrice });
       const deltaForBuy = this._getDeltaForBuy({ side, buyingBack: options.buyingBack, price, lastPrice });
       const convertValue = side === 'buy' ? lastPrice : 1;
@@ -294,24 +301,15 @@ export abstract class AbstractTradingClass {
         amount: side === 'sell' ? options.buyingBack + deltaForSale : options.buyingBack - deltaForBuy,
       };
 
-      const isStop = await this._EmergencyStopService.checkingIsEmergencyStop(
-        async () =>
-          await this._openPositionForStrategy({
-            side,
-            settingOrder: {
-              symbol: this._SYMBOL,
-              type: 'limit',
-              amount: options.buyingBack,
-              price: lastPrice,
-            },
-          }),
-      );
-
-      if (isStop) {
+      if (this._config.isEmergencyStop) {
+        await this._ConfigRepository.disableEmergencyStop();
         break;
       }
 
-      if (isNaN(deltaForSale) || isNaN(deltaForBuy)) {
+      if (
+        (this._config.isCapitalizeDeltaFromSale && isNaN(deltaForSale)) ||
+        (this._config.isCoinAccumulation && isNaN(deltaForBuy))
+      ) {
         throw new Error('Delta is not a number!');
       }
 
