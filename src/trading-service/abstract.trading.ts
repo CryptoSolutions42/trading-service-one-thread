@@ -129,14 +129,14 @@ export abstract class AbstractTradingClass {
   }
 
   protected async _reloadConfig(): Promise<void> {
-    const config = await this._ConfigRepository.getConfig()[0];
+    this._ConfigRepository.getConfig().then((config) => {
+      if (!config) {
+        return;
+      }
 
-    if (!config) {
-      return;
-    }
-
-    this._config = config;
-    console.log(`=> Config reload!`);
+      this._config = config[0];
+      console.log(`=> Config reload!`);
+    });
   }
 
   protected async _onPriceTracker({ side, settingOrder }: PriceTrackerParamType) {
@@ -293,9 +293,9 @@ export abstract class AbstractTradingClass {
         (firstOrder.side === 'sell'
           ? -(price * this._config.percentProfit + options.buyingBack * this._takerFee)
           : price * this._config.percentProfit + (lastPrice / options.buyingBack) * this._takerFee);
-      const deltaForSale = this._getDeltaForSale({ side, buyingBack: options.buyingBack, price, lastPrice });
-      const deltaForBuy = this._getDeltaForBuy({ side, buyingBack: options.buyingBack, price, lastPrice });
-      const convertValue = side === 'buy' ? lastPrice : 1;
+      const deltaForSale = await this._getDeltaForSale({ side, buyingBack: options.buyingBack, price, lastPrice });
+      const deltaForBuy = await this._getDeltaForBuy({ side, buyingBack: options.buyingBack, price, lastPrice });
+      const convertValue = side === 'sell' ? lastPrice : 1;
       const settingTakeProfit: SettingOrderType = {
         ...settingForFirstOrder,
         amount: side === 'sell' ? options.buyingBack + deltaForSale : options.buyingBack - deltaForBuy,
@@ -355,8 +355,8 @@ export abstract class AbstractTradingClass {
           if (this._config.isFibonacci) {
             // With fibonacci
             amountForBuyBack =
-              (balance[nativeCurrency].free - this._config.positionSize * lastPrice * options.drawdownStep) /
-                convertValue >
+              balance[nativeCurrency].free -
+                (this._config.positionSize * lastPrice * options.drawdownStep) / convertValue >
               0
                 ? (this._config.positionSize * lastPrice * options.drawdownStep) / convertValue
                 : 0;
@@ -368,7 +368,10 @@ export abstract class AbstractTradingClass {
                 : 0;
           }
 
-          console.log('_watchingProcess buyBack amountForBuyBack => ', amountForBuyBack);
+          console.log(
+            '_watchingProcess buyBack amountForBuyBack => ',
+            (this._config.positionSize * lastPrice * options.drawdownStep) / convertValue,
+          );
           if (amountForBuyBack > 0) {
             await this._openPositionForStrategy({
               side,
