@@ -135,7 +135,6 @@ export abstract class AbstractTradingClass {
       }
 
       this._config = config[0];
-      console.log(`=> Config reload!`);
     });
   }
 
@@ -189,14 +188,26 @@ export abstract class AbstractTradingClass {
           console.log('changes targetTakeProfit => ', { targetTakeProfit });
           console.log('changes targetStopProfit => ', { targetStopProfit });
         }
+        const logObject = {
+          timestamp: new Date().toLocaleTimeString(),
+          unrealizedPnl: unrealizedPnl,
+          targetTakeProfit: targetTakeProfit,
+          targetStopProfit: targetStopProfit,
+          lastPrice: lastPrice,
+        };
 
-        console.log('==================================');
-        console.log('_onPriceTracker => ');
-        console.log('unrealizedPnl => ', unrealizedPnl);
-        console.log('targetTakeProfit => ', targetTakeProfit);
-        console.log('targetStopProfit => ', targetStopProfit);
-        console.log('lastPrice => ', lastPrice);
-        console.log('==================================');
+        this._clearPreviousOutput();
+        console.log('\n=== Swimming take profit ===');
+        console.log(JSON.stringify(logObject, null, 2));
+        console.log('==================================\n');
+
+        // console.log('==================================');
+        // console.log('_onPriceTracker => ');
+        // console.log('unrealizedPnl => ', unrealizedPnl);
+        // console.log('targetTakeProfit => ', targetTakeProfit);
+        // console.log('targetStopProfit => ', targetStopProfit);
+        // console.log('lastPrice => ', lastPrice);
+        // console.log('==================================');
 
         this._sleepTimeout(1000);
       }
@@ -293,9 +304,9 @@ export abstract class AbstractTradingClass {
         (firstOrder.side === 'sell'
           ? -(price * this._config.percentProfit + options.buyingBack * this._takerFee)
           : price * this._config.percentProfit + (lastPrice / options.buyingBack) * this._takerFee);
-      const deltaForSale = await this._getDeltaForSale({ side, buyingBack: options.buyingBack, price, lastPrice });
-      const deltaForBuy = await this._getDeltaForBuy({ side, buyingBack: options.buyingBack, price, lastPrice });
-      const convertValue = side === 'sell' ? lastPrice : 1;
+      const deltaForSale = this._getDeltaForSale({ side, buyingBack: options.buyingBack, price, lastPrice });
+      const deltaForBuy = this._getDeltaForBuy({ side, buyingBack: options.buyingBack, price, lastPrice });
+      const convertValue = side === 'buy' ? lastPrice : 1;
       const settingTakeProfit: SettingOrderType = {
         ...settingForFirstOrder,
         amount: side === 'sell' ? options.buyingBack + deltaForSale : options.buyingBack - deltaForBuy,
@@ -368,10 +379,6 @@ export abstract class AbstractTradingClass {
                 : 0;
           }
 
-          console.log(
-            '_watchingProcess buyBack amountForBuyBack => ',
-            (this._config.positionSize * lastPrice * options.drawdownStep) / convertValue,
-          );
           if (amountForBuyBack > 0) {
             await this._openPositionForStrategy({
               side,
@@ -474,5 +481,9 @@ export abstract class AbstractTradingClass {
     console.log('_revertActiveStateOrder =>');
     await this._OrdersOperationService.clearingOrderList();
     console.log('_clearingOrderList =>');
+  }
+
+  private _clearPreviousOutput() {
+    process.stdout.write('\x1Bc');
   }
 }
