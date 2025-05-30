@@ -197,9 +197,9 @@ export abstract class AbstractTradingClass {
         };
 
         this._clearPreviousOutput();
-        console.log('\n=== Swimming take profit ===');
-        console.log(JSON.stringify(logObject, null, 2));
-        console.log('==================================\n');
+        console.log('\x1b[36m%s\x1b[0m', '\n=== Swimming take profit ===');
+        console.log('\x1b[36m%s\x1b[0m', JSON.stringify(logObject, null, 2));
+        console.log('\x1b[36m%s\x1b[0m', '==================================\n');
 
         // console.log('==================================');
         // console.log('_onPriceTracker => ');
@@ -365,10 +365,9 @@ export abstract class AbstractTradingClass {
           let amountForBuyBack;
           if (this._config.isFibonacci) {
             // With fibonacci
+            const unrealizedValue = (this._config.positionSize * lastPrice * options.drawdownStep) / convertValue;
             amountForBuyBack =
-              balance[nativeCurrency].free -
-                (this._config.positionSize * lastPrice * options.drawdownStep) / convertValue >
-              0
+              balance[nativeCurrency].free - unrealizedValue > 0 && options.buyingBack < unrealizedValue
                 ? (this._config.positionSize * lastPrice * options.drawdownStep) / convertValue
                 : 0;
           } else {
