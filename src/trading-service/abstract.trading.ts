@@ -366,10 +366,8 @@ export abstract class AbstractTradingClass {
           if (this._config.isFibonacci) {
             // With fibonacci
             const unrealizedValue = (this._config.positionSize * lastPrice * options.drawdownStep) / convertValue;
-            amountForBuyBack =
-              balance[nativeCurrency].free - unrealizedValue > 0 && options.buyingBack < unrealizedValue
-                ? (this._config.positionSize * lastPrice * options.drawdownStep) / convertValue
-                : 0;
+            console.log('unrealizedValue => ', unrealizedValue - options.buyingBack);
+            amountForBuyBack = balance[nativeCurrency].free - unrealizedValue > 0 ? unrealizedValue : 0;
           } else {
             // Without fibonacci
             amountForBuyBack =
