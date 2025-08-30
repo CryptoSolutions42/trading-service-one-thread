@@ -201,14 +201,6 @@ export abstract class AbstractTradingClass {
         console.log('\x1b[36m%s\x1b[0m', JSON.stringify(logObject, null, 2));
         console.log('\x1b[36m%s\x1b[0m', '==================================\n');
 
-        // console.log('==================================');
-        // console.log('_onPriceTracker => ');
-        // console.log('unrealizedPnl => ', unrealizedPnl);
-        // console.log('targetTakeProfit => ', targetTakeProfit);
-        // console.log('targetStopProfit => ', targetStopProfit);
-        // console.log('lastPrice => ', lastPrice);
-        // console.log('==================================');
-
         this._sleepTimeout(1000);
       }
     } catch (error) {
@@ -306,7 +298,7 @@ export abstract class AbstractTradingClass {
           : price * this._config.percentProfit + (lastPrice / options.buyingBack) * this._takerFee);
       const deltaForSale = this._getDeltaForSale({ side, buyingBack: options.buyingBack, price, lastPrice });
       const deltaForBuy = this._getDeltaForBuy({ side, buyingBack: options.buyingBack, price, lastPrice });
-      const convertValue = side === 'buy' ? lastPrice : 1;
+      const convertValue = side === 'buy' ? 1 : lastPrice;
       const settingTakeProfit: SettingOrderType = {
         ...settingForFirstOrder,
         amount: side === 'sell' ? options.buyingBack + deltaForSale : options.buyingBack - deltaForBuy,
@@ -366,8 +358,13 @@ export abstract class AbstractTradingClass {
           if (this._config.isFibonacci) {
             // With fibonacci
             const unrealizedValue = (this._config.positionSize * lastPrice * options.drawdownStep) / convertValue;
-            console.log('unrealizedValue => ', unrealizedValue - options.buyingBack);
-            amountForBuyBack = balance[nativeCurrency].free - unrealizedValue > 0 ? unrealizedValue : 0;
+            console.log('unrealizedValue => ', balance[nativeCurrency].free - unrealizedValue);
+            amountForBuyBack =
+              balance[nativeCurrency].free - unrealizedValue >= 0
+                ? side === 'buy'
+                  ? unrealizedValue / lastPrice
+                  : unrealizedValue
+                : 0;
           } else {
             // Without fibonacci
             amountForBuyBack =
