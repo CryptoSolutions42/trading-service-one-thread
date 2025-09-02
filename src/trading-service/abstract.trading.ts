@@ -341,12 +341,10 @@ export abstract class AbstractTradingClass {
       if (!watchingGridLogic) {
         const paramTakeProfitLogic = {
           side,
-          price,
-          lastPrice,
+          profitPrice,
           unrealizedPnl,
           settingTakeProfit,
           buyingBack: options.buyingBack,
-          takerFee: this._takerFee,
         };
         const resultTakeProfitBehavior = await watchingTakeProfitLogic(paramTakeProfitLogic);
 
