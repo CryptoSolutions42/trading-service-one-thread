@@ -127,11 +127,11 @@ export class SessionTradingService implements ISessionTradingService {
   }
 
   private async _checkingIfThereOpenOrders() {
-    let orenOrders = await this._ExchangeService.getOpenOrders(this._symbol);
+    let openOrders = await this._ExchangeService.getOpenOrders(this._symbol);
 
-    while (orenOrders.length !== 0) {
+    while (openOrders.length !== 0) {
       await this._sleepTimeout(5000);
-      orenOrders = await this._ExchangeService.getOpenOrders(this._symbol);
+      openOrders = await this._ExchangeService.getOpenOrders(this._symbol);
     }
   }
 
