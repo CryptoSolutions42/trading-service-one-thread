@@ -7,11 +7,11 @@ const configRepo = new ConfigRepository();
 
 configRouter.get(`/getConfig`, async (req: Request, res: Response) => {
   try {
-    // const result = (await configRepo.getConfig()).flatMap((config) => {
-    //   const { apiKey, privateKey, password, ...configMap } = config;
-    //   return configMap;
-    // });
-    // res.status(200).send(result);
+    const result = (await configRepo.getConfig()).flatMap((config) => {
+      const { apiKey, privateKey, password, ...configMap } = config;
+      return configMap;
+    });
+    res.status(200).send(result);
   } catch (error) {
     res.status(500);
   }
