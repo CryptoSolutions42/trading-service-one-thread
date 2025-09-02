@@ -93,9 +93,12 @@ export abstract class AbstractTradingClass {
     await new Promise((resolve) => setTimeout(resolve, ms));
   }
 
-  protected _getCurrencyBreakdown(symbol: string): ReturnCurrencyBreakdown {
-    const firstCurrency = symbol.slice(0, symbol.indexOf('/'));
-    const secondCurrency = symbol.slice(symbol.indexOf('/') + 1, symbol.length);
+  protected async _getCurrencyBreakdown(symbol: string): Promise<ReturnCurrencyBreakdown> {
+    const [firstCurrency, secondCurrency] = symbol.split('/');
+
+    if (!firstCurrency || !secondCurrency) {
+      throw new Error('Invalid symbol format');
+    }
 
     return {
       firstCurrency,
@@ -196,16 +199,16 @@ export abstract class AbstractTradingClass {
           lastPrice: lastPrice,
         };
 
-        this._clearPreviousOutput();
+        await this._clearPreviousOutput();
         console.log('\x1b[36m%s\x1b[0m', '\n=== Swimming take profit ===');
         console.log('\x1b[36m%s\x1b[0m', JSON.stringify(logObject, null, 2));
         console.log('\x1b[36m%s\x1b[0m', '==================================\n');
 
-        this._sleepTimeout(1000);
+        await this._sleepTimeout(1000);
       }
     } catch (error) {
       const { message } = error as { message: string };
-      if (message !== 'Price not actual logic!' || 'Orders not found!') {
+      if (message !== 'Price not actual logic!' && message !== 'Orders not found!') {
         console.error(message);
       }
 
@@ -288,7 +291,7 @@ export abstract class AbstractTradingClass {
         firstOrder ? firstOrder.side : this._OrdersOperationService.orders[0].side,
       );
       const buyBackPrice = price * (this._config.percentBuyBackStep * options.drawdownStep);
-      const { firstCurrency, secondCurrency } = this._getCurrencyBreakdown(this._SYMBOL);
+      const { firstCurrency, secondCurrency } = await this._getCurrencyBreakdown(this._SYMBOL);
       const nativeCurrency = side === 'sell' ? firstCurrency : secondCurrency;
       const lastPrice = await this._ExchangeService.getPrice(this._SYMBOL);
       const profitPrice =
@@ -296,8 +299,8 @@ export abstract class AbstractTradingClass {
         (firstOrder.side === 'sell'
           ? -(price * this._config.percentProfit + options.buyingBack * this._takerFee)
           : price * this._config.percentProfit + (lastPrice / options.buyingBack) * this._takerFee);
-      const deltaForSale = this._getDeltaForSale({ side, buyingBack: options.buyingBack, price, lastPrice });
-      const deltaForBuy = this._getDeltaForBuy({ side, buyingBack: options.buyingBack, price, lastPrice });
+      const deltaForSale = await this._getDeltaForSale({ side, buyingBack: options.buyingBack, price, lastPrice });
+      const deltaForBuy = await this._getDeltaForBuy({ side, buyingBack: options.buyingBack, price, lastPrice });
       const convertValue = side === 'buy' ? 1 : lastPrice;
       const settingTakeProfit: SettingOrderType = {
         ...settingForFirstOrder,
@@ -405,7 +408,7 @@ export abstract class AbstractTradingClass {
   private async _getConfig(): Promise<ConfigType> {
     await this._ConfigRepository.getConfig().then(async (config) => {
       this._config = config[0];
-      this._initGeneralUtils();
+      await this._initGeneralUtils();
       await this._ConfigRepository.recordLogger(this._loggerIdentity);
       console.log(`=> AbstractTradingClass initialized!`);
     });
@@ -413,7 +416,7 @@ export abstract class AbstractTradingClass {
     return this._config;
   }
 
-  private _getDeltaForSale({ side, buyingBack, price, lastPrice }: GetDeltaParamType): number {
+  private async _getDeltaForSale({ side, buyingBack, price, lastPrice }: GetDeltaParamType): Promise<number> {
     return side === 'sell' && this._config.isCapitalizeDeltaFromSale
       ? (this._OrdersOperationService.orders.reduce((prev, curr) => {
           const delta = curr.amount * curr.price;
@@ -424,7 +427,7 @@ export abstract class AbstractTradingClass {
       : 0;
   }
 
-  private _getDeltaForBuy({ side, buyingBack, price, lastPrice }: GetDeltaParamType): number {
+  private async _getDeltaForBuy({ side, buyingBack, price, lastPrice }: GetDeltaParamType): Promise<number> {
     return side === 'buy' && this._config.isCoinAccumulation
       ? (buyingBack * price -
           this._OrdersOperationService.orders.reduce((prev, curr) => {
@@ -435,9 +438,9 @@ export abstract class AbstractTradingClass {
       : 0;
   }
 
-  private _initGeneralUtils() {
+  private async _initGeneralUtils() {
     const { apiKey, privateKey, password, symbol, exchange } = this._config;
-    this._initApiKeys(apiKey, privateKey, password);
+    await this._initApiKeys(apiKey, privateKey, password);
     this._SYMBOL = symbol;
     this._exchangeName = exchange;
     this._EmergencyStopService = new EmergencyStopService();
@@ -448,7 +451,7 @@ export abstract class AbstractTradingClass {
     this._loggerIdentity = 'trading-service-' + new GenerateIdentity(15).generateIdentity();
   }
 
-  private _initApiKeys(apiKey: string, privateKey: string, password: string): void {
+  private async _initApiKeys(apiKey: string, privateKey: string, password: string): Promise<void> {
     this._apiKey = apiKey;
     this._privateKey = privateKey;
     this._password = password;
@@ -477,7 +480,7 @@ export abstract class AbstractTradingClass {
     console.log('_clearingOrderList =>');
   }
 
-  private _clearPreviousOutput() {
+  private async _clearPreviousOutput() {
     process.stdout.write('\x1Bc');
   }
 }
