@@ -439,7 +439,7 @@ export abstract class AbstractTradingClass {
 
   private async _initGeneralUtils() {
     const { apiKey, privateKey, password, symbol, exchange } = this._config;
-    this._initApiKeys(apiKey, privateKey, password);
+    await this._initApiKeys(apiKey, privateKey, password);
     this._SYMBOL = symbol;
     this._exchangeName = exchange;
     this._EmergencyStopService = new EmergencyStopService();
@@ -450,7 +450,7 @@ export abstract class AbstractTradingClass {
     this._loggerIdentity = 'trading-service-' + new GenerateIdentity(15).generateIdentity();
   }
 
-  private _initApiKeys(apiKey: string, privateKey: string, password: string): void {
+  private async _initApiKeys(apiKey: string, privateKey: string, password: string): Promise<void> {
     this._apiKey = apiKey;
     this._privateKey = privateKey;
     this._password = password;
