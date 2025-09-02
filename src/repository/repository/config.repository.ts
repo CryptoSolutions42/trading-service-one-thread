@@ -26,6 +26,7 @@ export class ConfigRepository extends AbstractRepository {
         'is_percent_target_after_take_profit as "isPercentTargetAfterTakeProfit"',
         'is_capitalize_delta_from_sale as "isCapitalizeDeltaFromSale"',
         'is_coin_accumulation as "isCoinAccumulation"',
+        'is_only_buy as "isOnlyBuy"',
         'logger_event as "loggerEvent"',
         'api_key as "apiKey"',
         'private_key as "privateKey"',
