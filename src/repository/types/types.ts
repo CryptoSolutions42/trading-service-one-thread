@@ -87,6 +87,7 @@ export type ConfigType = {
   isPercentTargetAfterTakeProfit: boolean;
   isCapitalizeDeltaFromSale: boolean;
   isCoinAccumulation: boolean;
+  isOnlyBuy: boolean;
   percentTargetAfterTakeProfit: number;
   balanceDistribution: boolean;
   exchange: 'okx';
@@ -147,6 +148,7 @@ export enum ColumnName {
   percentTargetAfterTakeProfit = 'percent_target_after_take_profit',
   isCapitalizeDeltaFromSale = 'is_capitalize_delta_from_sale',
   isCoinAccumulation = 'is_coin_accumulation',
+  isOnlyBuy = 'is_only_buy',
   loggerEvent = 'logger_event',
   // instance_identity
   copyId = 'copy_id',

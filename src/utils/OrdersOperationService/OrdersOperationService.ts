@@ -26,9 +26,11 @@ export class OrdersOperationService implements IOrdersOperationService {
   public orders: OrderType[];
   private _ExchangeService: IExchangeService;
   private _OrderRepository: OrderRepository;
+  private _config: ConfigType;
 
   constructor(config: ConfigType) {
     this.orders = [];
+    this._config = config;
     const { exchange, apiKey, privateKey, password } = config;
     this._ExchangeService = new ExchangeService(exchange, apiKey, privateKey, password);
     this._OrderRepository = new OrderRepository();
@@ -43,11 +45,7 @@ export class OrdersOperationService implements IOrdersOperationService {
   }
 
   public async getProfitForTradeSession(indexOperation: string, side: ModeType, orders: OrderType[]): Promise<number> {
-    const result = await this._OrderRepository.getProfitForTradeSession(
-      indexOperation,
-      side,
-      orders,
-    );
+    const result = await this._OrderRepository.getProfitForTradeSession(indexOperation, side, orders);
     return result;
   }
 
@@ -197,6 +195,17 @@ export class OrdersOperationService implements IOrdersOperationService {
     indexOperation,
   }: OpenFirstPositionType): Promise<Order> {
     let firstOrder: Order;
+
+    if (this._config.isOnlyBuy) {
+      firstOrder = await this.openPositionForStrategy({
+        side: 'buy',
+        settingOrder: settingForFirstOrder,
+        indexOperation,
+      });
+
+      return firstOrder;
+    }
+
     if (price >= lowestInCandle && price <= highestInCandle) {
       const sellSide = price - lowestInCandle;
       const buySide = highestInCandle - price;
