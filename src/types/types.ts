@@ -198,9 +198,7 @@ export type StartAlgorithmsType = {
 
 export type WatchingTakeProfitLogicType = {
   side: ModeType;
-  buyingBack: number;
-  takerFee: number;
-  price: number;
+  profitPrice: number;
   unrealizedPnl: number;
   settingTakeProfit: SettingOrderType;
 };

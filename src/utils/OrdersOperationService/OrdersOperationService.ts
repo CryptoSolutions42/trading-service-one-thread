@@ -212,13 +212,13 @@ export class OrdersOperationService implements IOrdersOperationService {
 
       if (buySide > sellSide) {
         firstOrder = await this.openPositionForStrategy({
-          side: 'sell',
+          side: 'buy',
           settingOrder: settingForFirstOrder,
           indexOperation,
         });
       } else {
         firstOrder = await this.openPositionForStrategy({
-          side: 'buy',
+          side: 'sell',
           settingOrder: settingForFirstOrder,
           indexOperation,
         });
