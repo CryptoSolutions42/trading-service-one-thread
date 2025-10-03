@@ -91,6 +91,10 @@ export class ExchangeService implements IExchangeService {
     return await this._ccxt.cancelAllOrders(symbol);
   }
 
+  async closeOrder(id: string, symbol: string): Promise<void> {
+    return await this._ccxt.cancelOrder(id, symbol);
+  }
+
   async createOrder({ symbol, type, side, amount, price, params }: CreateOpenPositionType): Promise<Order> {
     return await this._ccxt.createOrder(symbol, type, side, amount, price, params);
   }
