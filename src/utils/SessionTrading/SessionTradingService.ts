@@ -28,7 +28,8 @@ export class SessionTradingService implements ISessionTradingService {
   }
 
   public async initTradeSession(): Promise<{ typeSession: string; indexOperation: string }> {
-    await this._checkingIfThereOpenOrders();
+    // TODO: Продумать вариант ожидания не исполненного ордера
+    // await this._checkingIfThereOpenOrders();
     let indexOperation: string;
     const isActiveOldSession = await this._checkingActiveSession();
     console.log('_initTradeSession => ', isActiveOldSession);

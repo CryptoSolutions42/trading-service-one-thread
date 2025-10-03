@@ -296,9 +296,8 @@ export abstract class AbstractTradingClass {
       const lastPrice = await this._ExchangeService.getPrice(this._SYMBOL);
       const profitPrice =
         price +
-        (firstOrder.side === 'sell'
-          ? -(price * this._config.percentProfit + options.buyingBack * this._takerFee)
-          : price * this._config.percentProfit + (lastPrice / options.buyingBack) * this._takerFee);
+        // only sui или монеты с ценой меньше 10 долларов
+        (firstOrder.side === 'sell' ? -(price * this._config.percentProfit) : price * this._config.percentProfit);
       const deltaForSale = await this._getDeltaForSale({ side, buyingBack: options.buyingBack, price, lastPrice });
       const deltaForBuy = await this._getDeltaForBuy({ side, buyingBack: options.buyingBack, price, lastPrice });
       const convertValue = side === 'buy' ? 1 : lastPrice;
@@ -342,12 +341,10 @@ export abstract class AbstractTradingClass {
       if (!watchingGridLogic) {
         const paramTakeProfitLogic = {
           side,
-          price,
-          lastPrice,
+          profitPrice,
           unrealizedPnl,
           settingTakeProfit,
           buyingBack: options.buyingBack,
-          takerFee: this._takerFee,
         };
         const resultTakeProfitBehavior = await watchingTakeProfitLogic(paramTakeProfitLogic);
 

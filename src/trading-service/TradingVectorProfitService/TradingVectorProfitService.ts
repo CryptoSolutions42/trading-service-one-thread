@@ -31,13 +31,11 @@ export class TradingVectorProfitService extends AbstractTradingClass implements 
 
   private async _watchingTakeProfitLogic({
     side,
-    buyingBack,
-    takerFee,
-    price,
+    profitPrice,
     unrealizedPnl,
     settingTakeProfit,
   }: WatchingTakeProfitLogicType): Promise<boolean> {
-    if (unrealizedPnl >= price * this._config.percentProfit + buyingBack * takerFee) {
+    if (unrealizedPnl >= profitPrice * this._config.percentProfit) {
       if (this._config.isPercentTargetAfterTakeProfit) {
         const resultTakeProfitBehavior = await this._onPriceTracker({
           side: side === 'sell' ? 'buy' : 'sell',
